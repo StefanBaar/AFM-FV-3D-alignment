@@ -6,6 +6,7 @@
 | `ting/` | `ting_fitting.pdf` | Ting viscoelastic fit: force conversion, contact mechanics, Lee–Radok / Ting, discretisation, fit, slope correction, parameters |
 | `adhesion/` | `adhesion_properties.pdf` | every adhesion property on the retract curve: definition, how it is measured or computed |
 | `variants/` | `model_variants.pdf` | model variants of the Ting fit (contact point, toe force, reference time): E, α, contrast, E–α relationship |
+| `clustering/` | `multiparam_clustering.pdf` | multi-parameter clustering (E, α, δ, adhesion) of the time-lapse: independence of the parameters, peak-force confound, clusters, maps, cell identity, prior work, next steps |
 | `segmentation/` | `segmentation_tracking.pdf` | cell segmentation and tracking: every step, the math, worked examples |
 
 Each folder: `<name>.tex` (Beamer, metropolis theme), `<name>.pdf`, `fig/` (figures used by the .tex),

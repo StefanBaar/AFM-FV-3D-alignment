@@ -10,6 +10,7 @@ Writes one .npy per dataset (shape ny x nx) into
     OUT_DIR/E/<name>.npy         E (Pa)                      -- key set by --e-key
     OUT_DIR/alpha/<name>.npy     power-law exponent alpha
     OUT_DIR/delta/<name>.npy     max indentation delta (um)
+    OUT_DIR/Fmax_nN/<name>.npy   peak (loading) force; OUT_DIR/adh_ratio/ = F_adh / F_max (load-normalised adhesion)
     OUT_DIR/adh_*/<name>.npy     adhesion maps (see below), computed from the retract curves stored
                                  in the .npz (no refitting); never masked (independent of the Ting fit)
     OUT_DIR/pixels.json          pixel size [px, py] (um) of every map (used by segment_cells.py and the viewer)
@@ -377,7 +378,7 @@ def main():
 
 
 # every model version of E and alpha (and its quality / contact-point maps) is exported under its npz key
-MODEL_KEYS = re.compile(r"^(E1_.*Pa|E_at_.*Pa|alpha_.+|E_elastic_Pa|E_depth_ratio|R2(_.+)?|eta_sq_mPas|h0_sq_um|"
+MODEL_KEYS = re.compile(r"^(Fmax_nN|E1_.*Pa|E_at_.*Pa|alpha_.+|E_elastic_Pa|E_depth_ratio|R2(_.+)?|eta_sq_mPas|h0_sq_um|"
                         r"cp_shift_.+_um)$")
 MODEL_MASKED = re.compile(r"^(E1_.*|E_at_.*|alpha_.+|E_elastic_Pa)$")     # masked like E unless --no-mask
 
@@ -427,6 +428,12 @@ def export_one(job):
                     for k, m in A.items():
                         (out / k).mkdir(parents=True, exist_ok=True)
                         np.save(out / k / f"{f.stem}.npy", m)
+                    if "Fmax_nN" in z.files and np.shape(z["Fmax_nN"]) == np.shape(A["adh_force_nN"]):
+                        # adhesion scales with the peak (loading) force; the ratio is the load-normalised adhesion
+                        fm = np.asarray(z["Fmax_nN"], np.float32)
+                        (out / "adh_ratio").mkdir(parents=True, exist_ok=True)
+                        np.save(out / "adh_ratio" / f"{f.stem}.npy",
+                                np.where(fm > 0, A["adh_force_nN"] / np.where(fm > 0, fm, 1), np.nan).astype(np.float32))
                     fa = A["adh_force_nN"]
                     adh_msg = (f"  | adhesion ({src_}): F {np.nanmedian(fa):.2f} nN, "
                                f"W {np.nanmedian(A['adh_work_fJ']):.2f} fJ, "

@@ -160,6 +160,8 @@ FIELDS = ["topo", "E", "alpha", "delta"]
 # optional maps, added to the viewer when DATA/<key>/ exists (written by extract_topo_E.py)
 ADH_META = {
     "adh_force_nN":        dict(label="adhesion force", unit="nN", cmap="magma"),
+    "adh_ratio":           dict(label="adhesion / peak force (load-normalised)", unit="", cmap="magma"),
+    "Fmax_nN":             dict(label="peak (loading) force", unit="nN", cmap="cividis"),
     "adh_work_fJ":         dict(label="work of adhesion", unit="fJ", cmap="magma"),
     "adh_gamma_JKR_mJ_m2": dict(label="JKR work of adhesion w", unit="mJ/m²", cmap="magma"),
     "adh_pulloff_um":      dict(label="pull-off distance", unit="µm", cmap="viridis"),

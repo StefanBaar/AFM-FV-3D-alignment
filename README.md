@@ -12,7 +12,7 @@ Viscoelastic analysis of AFM force-volume maps and time-lapses of living specime
 | step | script | output |
 |---|---|---|
 | 1 | `afm_ting_pipeline.py` | Ting fit per curve: E(t) = E₁ (t/t₀)^−α, fitted contact point, slope (normal-frame) correction, hydrodynamic drag correction, E at reference times (1, 2, 10 ms), model variants, adhesion, quality flags → one `.npz` per map + quick-look PNG |
-| 2 | `extract_topo_E.py` | one `.npy` per map and property (topography, E, α, δ, adhesion, every model variant, exclusion mask) + `pixels.json` |
+| 2 | `extract_topo_E.py` | one `.npy` per map and property (topography, E, α, δ, adhesion, peak force and load-normalised adhesion, every model variant, exclusion mask) + `pixels.json` |
 | 3 | `segment_cells.py` | multi-channel cell segmentation, 3D rigid registration of the frames, tracking, division detection → cell table, tracks, label maps |
 | 4 | `build_timelapse_viewer.py` | one HTML file (data, three.js and the page built in; works offline) |
 
@@ -84,6 +84,7 @@ LaTeX (Beamer) slides with sources, figures and the scripts that made them:
 | [`docs/ting/ting_fitting.pdf`](docs/ting/ting_fitting.pdf) | the Ting fit and every parameter |
 | [`docs/variants/model_variants.pdf`](docs/variants/model_variants.pdf) | contact-point, toe and reference-time variants; effect on E, α, contrast and the E–α relationship |
 | [`docs/adhesion/adhesion_properties.pdf`](docs/adhesion/adhesion_properties.pdf) | every adhesion property on the retract curve |
+| [`docs/clustering/multiparam_clustering.pdf`](docs/clustering/multiparam_clustering.pdf) | multi-parameter clustering of E, α, δ and adhesion; which parameters are independent; cell identity; prior work |
 | [`docs/segmentation/segmentation_tracking.pdf`](docs/segmentation/segmentation_tracking.pdf) | segmentation, registration and tracking, with the math and worked examples |
 
 ## Third-party code
