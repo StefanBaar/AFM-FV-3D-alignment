@@ -28,9 +28,10 @@ Offline: download [`demo/ciona_timelapse_viewer.html`](demo/ciona_timelapse_view
 
 ![Time-lapse viewer](media/screenshot_viewer.png)
 
+- Settings in a collapsible sidebar on the right (Colour, Excluded fits, Display, 3D view, Segmentation, Export).
 - 3D surface, registered frame-to-frame (full 3D rolling, z-rotation only, or raw), with a 2D map in scan coordinates next to it.
 - Colour by E, α, δ, topography, every adhesion property, every model variant (E at 1 ms / 2 ms / 10 ms, E₁, lab contact point, squeeze-film, elastic, depth ratio) or cell tracks.
-- Display upsampling (0.5 / 0.25 µm, bicubic), isolated-outlier filter and hole filling, excluded pixels shown or dimmed.
+- Display upsampling (0.5 / 0.25 µm, bicubic), isolated-outlier filter and hole filling, excluded pixels shown or darkened.
 - Cell outlines as smooth vectors with junctions, or pixel edges.
 - **Orientation inset**: a sphere with the embryo's body axes and the cantilever tip, with the total rotation and the tip tilt relative to frame 1.
 - **Export**: PNG, PDF or MP4 (all frames, H.264), of the 3D view, the 2D map or both side by side, at 1280–3840 px, with a white background. MP4 encoding runs in the browser (WebCodecs; current Chrome, Edge, Safari or Firefox).

@@ -326,21 +326,20 @@ python segment_cells.py maps -o seg --config afm_pipeline.toml   # uses [segment
 \begin{lstlisting}
 python build_timelapse_viewer.py maps -o viewer.html --config afm_pipeline.toml
 \end{lstlisting}
-\footnotesize
+\scriptsize
 \begin{itemize}
 \item One HTML file with all data embedded (no internet needed). Open it in any browser.
-\item The frames are registered in 3D (rigid). Registration modes: full 3D, $z$-rotation, or raw.
-\item Controls:
+\item Settings sidebar on the right, in collapsible groups (\emph{Settings} button hides it):
  \begin{itemize}
- \item colour by any map; colour range;
- \item excluded pixels per reason, and \emph{dim them};
- \item display grid and outlier filter;
- \item surface or points;
- \item cell outlines (vector or pixels) and masks;
- \item linked 2D map; play / step / loop; PNG export.
+ \item \textbf{Colour}: colour by any map; colour map; range;
+ \item \textbf{Excluded fits}: show by reason; \emph{darken excluded pixels};
+ \item \textbf{Display}: grid, outlier filter, surface or points, 2D map;
+ \item \textbf{3D view}: registration (full 3D, $z$-rotation, raw), $z$ exaggeration, orientation inset;
+ \item \textbf{Segmentation}: cell outlines (vector or pixels), masks;
+ \item \textbf{Export}: PNG, PDF or MP4, white background.
  \end{itemize}
-\item Keys: space = play, $\leftarrow/\rightarrow$ = step.
 \end{itemize}
+Keys: space = play, $\leftarrow/\rightarrow$ = step.
 \end{column}
 \end{columns}
 \end{frame}

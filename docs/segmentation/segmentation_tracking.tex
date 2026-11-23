@@ -423,13 +423,13 @@ A ``reliable stretch'' is the longest run of consecutive links of a track that p
 \textbf{Display only}: no number in the CSV files, the segmentation or the maps is changed. Interpolation makes the picture smooth but adds no resolution. The information is still that of the $1.01\times\SI{0.5}{\micro\metre}$ pixels.
 \end{frame}
 
-\begin{frame}{Viewer: holes, and what ``dim them'' does}
+\begin{frame}{Viewer: holes, and what ``darken excluded pixels'' does}
 \small
 \textbf{Holes found and fixed}:
 \begin{itemize}
 \item Height spikes ($>\SI{5}{\micro\metre}$ from the 3$\times$3 median; 1--75 pixels in 19 frames) used to be removed and left holes in the surface. They are now replaced by the median.
 \item In the last frame (21:48:03) the scan was aborted: 16 lines are missing, and 4 lines before them jumped by $\approx$\,40--50\,\si{\micro\metre} (the tip lost the surface). These lines are now removed. The registration of that frame improved from $37^\circ$ to $7.6^\circ$ with 91\,\% overlap.
-\item \emph{dim them}: darkens pixels that the fit flagged as excluded (steep, low $R^2$, deep $\delta$, $\alpha$ at bound) but that are shown, so they can be told apart.
+\item \emph{darken excluded pixels} (sidebar group ``Excluded fits''): draws pixels at 60\,\% brightness that the fit flagged as excluded (steep, low $R^2$, deep $\delta$, $\alpha$ at bound) but that are shown, so they can be told apart.
 \end{itemize}
 \end{frame}
 

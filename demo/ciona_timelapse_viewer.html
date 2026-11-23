@@ -26,11 +26,25 @@ button.pri,button.on{background:var(--acc);color:var(--accfg);border-color:var(-
 .item b{font-weight:600}
 .item small{display:block;opacity:.75;font-size:11px}
 #main{flex:1;min-width:0;display:flex;flex-direction:column}
-#bar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--panel)}
-#bar label,#play label{display:flex;align-items:center;gap:5px;color:var(--mute);white-space:nowrap}
-#bar input[type=range]{width:78px}
-#bar input[type=number]{width:78px;padding:4px 6px}
-#bar select,#play select{padding:5px 6px}
+#ctl{width:300px;min-width:240px;border-left:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:6px 10px 14px}
+#ctl.off{display:none}
+.grp{border-bottom:1px solid var(--line);padding:4px 0 8px}
+.grp>summary{cursor:pointer;font-weight:600;padding:6px 0;list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
+.grp>summary::-webkit-details-marker{display:none}
+.grp>summary::before{content:'▸';color:var(--mute);font-size:11px;width:10px}
+.grp[open]>summary::before{content:'▾'}
+#ctl label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--mute);margin:5px 0;min-height:26px}
+#ctl label:has(> input[type=checkbox]:first-child){justify-content:flex-start}
+#ctl label.inl{margin:0}
+#ctl select{max-width:170px;padding:4px 6px}
+#ctl input[type=number]{width:110px;padding:4px 6px}
+#ctl .rv{display:flex;align-items:center;gap:6px}
+#ctl .rv input[type=range]{width:110px}
+#ctl .rv b{min-width:30px;text-align:right;font-weight:500;color:var(--fg);font-variant-numeric:tabular-nums}
+#ctl .row{margin:6px 0}
+#ctl .hint{font-size:12px;color:var(--mute);margin:2px 0 4px}
+#play label{display:flex;align-items:center;gap:5px;color:var(--mute);white-space:nowrap}
+#play select{padding:5px 6px}
 #views{flex:1;min-height:0;display:flex}
 #view{flex:1 1 60%;min-width:0;position:relative;background:var(--scene)}
 #map2d{flex:0 0 40%;min-width:0;position:relative;background:var(--scene);border-left:1px solid var(--line)}
@@ -54,7 +68,7 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
 #tSlider{flex:1;min-width:120px}
 #tLab{font-variant-numeric:tabular-nums;min-width:150px;text-align:right;color:var(--mute)}
 #info{padding:6px 10px;border-top:1px solid var(--line);color:var(--mute);font-size:12px;min-height:28px}
-@media (max-width:820px){#app{flex-direction:column}#side{width:100%;max-height:34vh;border-right:0;border-bottom:1px solid var(--line)}}
+@media (max-width:820px){#app{flex-direction:column}#side{width:100%;max-height:28vh;border-right:0;border-bottom:1px solid var(--line)}#ctl{width:100%;max-height:34vh;border-left:0;border-top:1px solid var(--line)}}
 </style>
 </head>
 <body>
@@ -66,46 +80,6 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
     <div class="sub" id="note"></div>
   </aside>
   <section id="main">
-    <div id="bar">
-      <label>Colour by <select id="cField"></select></label>
-      <label>Map <select id="cMap"></select></label>
-      <label><input type="checkbox" id="cLog"> log</label>
-      <label>low % <input type="range" id="pLo" min="0" max="49" step="1" value="2"><b id="pLoV">2</b></label>
-      <label>high % <input type="range" id="pHi" min="51" max="100" step="1" value="98"><b id="pHiV">98</b></label>
-      <label>min <input type="number" id="vMin" step="any" placeholder="auto"></label>
-      <label>max <input type="number" id="vMax" step="any" placeholder="auto"></label>
-      <button id="bAuto">Auto</button>
-      <label><input type="checkbox" id="cPer"> per-frame range</label>
-      <label>Registration <select id="cMode"><option value="3d">full 3D (rolling)</option><option value="z">z-rotation only</option><option value="none">none (raw)</option></select></label>
-      <label title="1 = equal scale on x, y, z">z exaggeration <input type="range" id="cZe" min="0.2" max="5" step="0.1" value="1"><b id="cZeV">1.0</b></label>
-      <label><input type="checkbox" id="cOrtho" checked> orthographic</label>
-      <label><input type="checkbox" id="cGhost"> previous frame</label>
-      <span id="xGrp" class="row" style="gap:8px;display:none"><span style="color:var(--mute)">show excluded:</span>
-        <label title="surface slope above the threshold (slope correction unreliable)"><input type="checkbox" class="xr" value="2" checked> steep</label>
-        <label title="R² below the threshold"><input type="checkbox" class="xr" value="1" checked> low R²</label>
-        <label title="indentation deeper than the limit (e.g. 2R)"><input type="checkbox" class="xr" value="4" checked> deep δ</label>
-        <label title="α at fit bound or E ≤ 0"><input type="checkbox" class="xr" value="8" checked> α bound</label>
-        <label title="darken excluded pixels so they can be told apart"><input type="checkbox" id="cDim"> dim them</label></span>
-      <label title="display grid: raw = measured pixels; otherwise bicubic resampling to an isotropic grid (display only)">grid <select id="cRes"><option value="0">raw pixels</option><option value="0.5">0.5 µm</option><option value="0.25" selected>0.25 µm</option></select></label>
-      <label title="replace isolated single-pixel outliers (> 5 robust SD beyond the 2nd most extreme of the 8 neighbours) by the neighbour median, and fill holes of up to 12 pixels (display only; thin junction lines are kept)"><input type="checkbox" id="cFilt" checked> outlier filter + fill small holes</label>
-      <label>Display <select id="cDisp"><option value="surface">surface</option><option value="points">points</option><option value="both">surface + points</option></select></label>
-      <label>point size <input type="range" id="cPs" min="1" max="14" step="0.5" value="4"><b id="cPsV">4</b></label>
-      <label><input type="checkbox" id="c2d" checked> 2D map</label>
-      <span id="olGrp" class="row" style="gap:8px;display:none"><span style="color:var(--mute)">segmentation:</span>
-        <label><input type="checkbox" id="cOutline" checked> outlines</label>
-        <select id="cOStyle" title="outline style"><option value="vector">vector (curves + junctions)</option><option value="pixels">pixels</option></select>
-        <label title="outline width (3D tube radius in µm; 2D line width)">width <input type="range" id="cOW" min="0.04" max="0.4" step="0.02" value="0.12"><b id="cOWV">0.12</b></label>
-        <label title="opacity of the cell masks drawn over the map (0 = off)">masks <input type="range" id="cMaskA" min="0" max="1" step="0.05" value="0"><b id="cMaskAV">0</b></label></span>
-      <label><input type="checkbox" id="cShade" checked> shading</label>
-      <label><input type="checkbox" id="cAxes" checked> axes</label>
-      <label title="embryo orientation (sphere + body axes) and cantilever tip, relative to frame 1"><input type="checkbox" id="cGz" checked> orientation</label>
-      <span class="row" style="gap:4px"><button data-v="iso">Iso</button><button data-v="top">Top</button><button data-v="front">Front</button><button data-v="side">Side</button></span>
-      <span class="row" style="gap:6px">Export <select id="xWhat"><option value="3d">3D view</option><option value="2d">2D map</option><option value="both">3D + 2D</option></select>
-        <select id="xFmt"><option value="png">PNG</option><option value="pdf">PDF</option><option value="mp4">MP4 (all frames)</option></select>
-        <select id="xW" title="output width (px)"><option>1280</option><option selected>1920</option><option>2560</option><option>3840</option></select>
-        <label title="white background and dark text in the export"><input type="checkbox" id="xWhite" checked> white bg</label>
-        <button id="bExp">Export</button><span id="xStat"></span></span>
-    </div>
     <div id="views">
       <div id="view">
         <canvas id="cv"></canvas>
@@ -127,9 +101,60 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
       <span id="tLab"></span>
       <label>speed <select id="cFps"><option value="0.5">0.5 fr/s</option><option value="1">1 fr/s</option><option value="2" selected>2 fr/s</option><option value="4">4 fr/s</option><option value="8">8 fr/s</option><option value="15">15 fr/s</option></select></label>
       <label><input type="checkbox" id="cLoop" checked> loop</label>
+      <button id="bCtl" class="on" title="show / hide the settings sidebar">⚙ Settings</button>
     </div>
     <div id="info"></div>
   </section>
+  <aside id="ctl">
+    <details class="grp" data-g="colour" open><summary>Colour</summary>
+        <label>colour by <select id="cField"></select></label>
+        <label>colour map <select id="cMap"></select></label>
+        <label><input type="checkbox" id="cLog"> log scale</label>
+        <label title="lower end of the colour range as a percentile of the frame">low percentile <span class="rv"><input type="range" id="pLo" min="0" max="49" step="1" value="2"><b id="pLoV">2</b></span></label>
+        <label title="upper end of the colour range as a percentile of the frame">high percentile <span class="rv"><input type="range" id="pHi" min="51" max="100" step="1" value="98"><b id="pHiV">98</b></span></label>
+        <label>min <input type="number" id="vMin" step="any" placeholder="auto"></label>
+        <label>max <input type="number" id="vMax" step="any" placeholder="auto"></label>
+        <div class="row"><button id="bAuto">Auto range</button><label class="inl"><input type="checkbox" id="cPer"> per-frame range</label></div>
+    </details>
+    <details class="grp" data-g="excl" id="xGrp" style="display:none" open><summary>Excluded fits</summary>
+        <div class="hint">Show pixels whose fit was excluded, by reason:</div>
+        <label title="surface slope above the threshold (slope correction unreliable)"><input type="checkbox" class="xr" value="2" checked> steep slope</label>
+        <label title="R² below the threshold"><input type="checkbox" class="xr" value="1" checked> low R²</label>
+        <label title="indentation deeper than the limit (e.g. 2R)"><input type="checkbox" class="xr" value="4" checked> too deep (δ)</label>
+        <label title="α at a fit bound or E ≤ 0"><input type="checkbox" class="xr" value="8" checked> α at fit bound</label>
+        <label title="shown excluded pixels are drawn at 60 % brightness, so they can be told apart from valid fits"><input type="checkbox" id="cDim"> darken excluded pixels</label>
+    </details>
+    <details class="grp" data-g="disp" open><summary>Display</summary>
+        <label title="display grid: raw = measured pixels; otherwise bicubic resampling to an isotropic grid (display only)">grid <select id="cRes"><option value="0">raw pixels</option><option value="0.5">0.5 µm</option><option value="0.25" selected>0.25 µm</option></select></label>
+        <label title="replace isolated single-pixel outliers (> 5 robust SD beyond the 2nd most extreme of the 8 neighbours) by the neighbour median, and fill holes of up to 12 pixels (display only; thin junction lines are kept)"><input type="checkbox" id="cFilt" checked> outlier filter + fill small holes</label>
+        <label>draw as <select id="cDisp"><option value="surface">surface</option><option value="points">points</option><option value="both">surface + points</option></select></label>
+        <label>point size <span class="rv"><input type="range" id="cPs" min="1" max="14" step="0.5" value="4"><b id="cPsV">4</b></span></label>
+        <label><input type="checkbox" id="cShade" checked> shading</label>
+        <label><input type="checkbox" id="c2d" checked> 2D map beside the 3D view</label>
+    </details>
+    <details class="grp" data-g="view" open><summary>3D view</summary>
+        <label>registration <select id="cMode"><option value="3d">full 3D (rolling)</option><option value="z">z-rotation only</option><option value="none">none (raw)</option></select></label>
+        <label title="1 = equal scale on x, y, z">z exaggeration <span class="rv"><input type="range" id="cZe" min="0.2" max="5" step="0.1" value="1"><b id="cZeV">1.0</b></span></label>
+        <label><input type="checkbox" id="cOrtho" checked> orthographic projection</label>
+        <label><input type="checkbox" id="cGhost"> previous frame (wireframe)</label>
+        <label><input type="checkbox" id="cAxes" checked> axes</label>
+        <label title="embryo orientation (sphere + body axes) and cantilever tip, relative to frame 1"><input type="checkbox" id="cGz" checked> orientation inset</label>
+        <div class="row"><button data-v="iso">Iso</button><button data-v="top">Top</button><button data-v="front">Front</button><button data-v="side">Side</button></div>
+    </details>
+    <details class="grp" data-g="seg" id="olGrp" style="display:none" open><summary>Segmentation</summary>
+        <label><input type="checkbox" id="cOutline" checked> cell outlines</label>
+        <label>outline style <select id="cOStyle"><option value="vector">vector (curves + junctions)</option><option value="pixels">pixels</option></select></label>
+        <label title="outline width (3D tube radius in µm; 2D line width)">outline width <span class="rv"><input type="range" id="cOW" min="0.04" max="0.4" step="0.02" value="0.12"><b id="cOWV">0.12</b></span></label>
+        <label title="opacity of the cell masks drawn over the map (0 = off)">mask opacity <span class="rv"><input type="range" id="cMaskA" min="0" max="1" step="0.05" value="0"><b id="cMaskAV">0</b></span></label>
+    </details>
+    <details class="grp" data-g="exp"><summary>Export</summary>
+        <label>what <select id="xWhat"><option value="3d">3D view</option><option value="2d">2D map</option><option value="both">3D + 2D</option></select></label>
+        <label>format <select id="xFmt"><option value="png">PNG</option><option value="pdf">PDF</option><option value="mp4">MP4 (all frames)</option></select></label>
+        <label title="output width (px)">width <select id="xW"><option>1280</option><option selected>1920</option><option>2560</option><option>3840</option></select></label>
+        <label title="white background and dark text in the export"><input type="checkbox" id="xWhite" checked> white background</label>
+        <div class="row"><button id="bExp" class="pri">Export</button><span id="xStat"></span></div>
+    </details>
+  </aside>
 </div>
 
 <script>/**
@@ -2608,8 +2633,8 @@ $('cZe').oninput=e=>{cfg.ze=+e.target.value;$('cZeV').textContent=cfg.ze.toFixed
 $('cMode').onchange=e=>{cfg.mode=e.target.value;if(vecObj){objG.remove(vecObj);vecObj=null;}recentre();computeRange();show(cur);listText();setView('iso');};
 $('cOrtho').onchange=e=>{cfg.ortho=e.target.checked;camera=cfg.ortho?camO:camP;applyCam();};
 $('cGhost').onchange=e=>{cfg.ghost=e.target.checked;show(cur);};
-if(HASX)$('xGrp').style.display='flex';
-if(HASC){$('olGrp').style.display='flex';$('cOutline').onchange=e=>{cfg.outline=e.target.checked;show(cur);};
+if(HASX)$('xGrp').style.display='';
+if(HASC){$('olGrp').style.display='';$('cOutline').onchange=e=>{cfg.outline=e.target.checked;show(cur);};
   $('cOStyle').onchange=e=>{cfg.ostyle=e.target.value;show(cur);};
   $('cOW').oninput=e=>{cfg.ow=+e.target.value;$('cOWV').textContent=cfg.ow.toFixed(2);applyVec();draw2D();};
   $('cMaskA').oninput=e=>{cfg.maskA=+e.target.value;$('cMaskAV').textContent=cfg.maskA.toFixed(2);show(cur);};}
@@ -2621,6 +2646,9 @@ $('cDisp').onchange=e=>{cfg.disp=e.target.value;applyDisp();draw2D();};
 $('cPs').oninput=e=>{cfg.psize=+e.target.value;$('cPsV').textContent=cfg.psize;applyDisp();draw2D();};
 $('c2d').onchange=e=>{cfg.show2d=e.target.checked;m2.classList.toggle('off',!cfg.show2d);setTimeout(()=>{resize();draw2D();},0);};
 document.querySelectorAll('.xr').forEach(c=>c.onchange=()=>{cfg.xshow=[...document.querySelectorAll('.xr')].reduce((m,e)=>m|(e.checked?+e.value:0),0);restyle();});
+$('bCtl').onclick=()=>{const c=$('ctl');c.classList.toggle('off');$('bCtl').classList.toggle('on',!c.classList.contains('off'));setTimeout(()=>{resize();draw2D();},0);};
+document.querySelectorAll('#ctl details.grp').forEach(d=>{try{const v=localStorage.getItem('afmv.grp.'+d.dataset.g);if(v!==null)d.open=v==='1';}catch(e){}
+  d.addEventListener('toggle',()=>{try{localStorage.setItem('afmv.grp.'+d.dataset.g,d.open?'1':'0');}catch(e){}});});
 $('cDim').onchange=e=>{cfg.dim=e.target.checked;show(cur);};
 $('cShade').onchange=e=>{cfg.shade=e.target.checked;if(mesh){mesh.material.dispose();mesh.material=material();}req();};
 $('cAxes').onchange=e=>{cfg.axes=e.target.checked;rebuildAxes();};
