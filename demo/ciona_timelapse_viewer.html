@@ -101,12 +101,12 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
       <span id="tLab"></span>
       <label>speed <select id="cFps"><option value="0.5">0.5 fr/s</option><option value="1">1 fr/s</option><option value="2" selected>2 fr/s</option><option value="4">4 fr/s</option><option value="8">8 fr/s</option><option value="15">15 fr/s</option></select></label>
       <label><input type="checkbox" id="cLoop" checked> loop</label>
-      <button id="bCtl" class="on" title="show / hide the settings sidebar">⚙ Settings</button>
+      <button id="bCtl" title="show / hide the settings sidebar">⚙ Settings</button>
     </div>
     <div id="info"></div>
   </section>
-  <aside id="ctl">
-    <details class="grp" data-g="colour" open><summary>Colour</summary>
+  <aside id="ctl" class="off">
+    <details class="grp" data-g="colour"><summary>Colour</summary>
         <label>colour by <select id="cField"></select></label>
         <label>colour map <select id="cMap"></select></label>
         <label><input type="checkbox" id="cLog"> log scale</label>
@@ -116,7 +116,7 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
         <label>max <input type="number" id="vMax" step="any" placeholder="auto"></label>
         <div class="row"><button id="bAuto">Auto range</button><label class="inl"><input type="checkbox" id="cPer"> per-frame range</label></div>
     </details>
-    <details class="grp" data-g="excl" id="xGrp" style="display:none" open><summary>Excluded fits</summary>
+    <details class="grp" data-g="excl" id="xGrp" style="display:none"><summary>Excluded fits</summary>
         <div class="hint">Show pixels whose fit was excluded, by reason:</div>
         <label title="surface slope above the threshold (slope correction unreliable)"><input type="checkbox" class="xr" value="2" checked> steep slope</label>
         <label title="R² below the threshold"><input type="checkbox" class="xr" value="1" checked> low R²</label>
@@ -124,7 +124,7 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
         <label title="α at a fit bound or E ≤ 0"><input type="checkbox" class="xr" value="8" checked> α at fit bound</label>
         <label title="shown excluded pixels are drawn at 60 % brightness, so they can be told apart from valid fits"><input type="checkbox" id="cDim"> darken excluded pixels</label>
     </details>
-    <details class="grp" data-g="disp" open><summary>Display</summary>
+    <details class="grp" data-g="disp"><summary>Display</summary>
         <label title="display grid: raw = measured pixels; otherwise bicubic resampling to an isotropic grid (display only)">grid <select id="cRes"><option value="0">raw pixels</option><option value="0.5">0.5 µm</option><option value="0.25" selected>0.25 µm</option></select></label>
         <label title="replace isolated single-pixel outliers (> 5 robust SD beyond the 2nd most extreme of the 8 neighbours) by the neighbour median, and fill holes of up to 12 pixels (display only; thin junction lines are kept)"><input type="checkbox" id="cFilt" checked> outlier filter + fill small holes</label>
         <label>draw as <select id="cDisp"><option value="surface">surface</option><option value="points">points</option><option value="both">surface + points</option></select></label>
@@ -132,7 +132,7 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
         <label><input type="checkbox" id="cShade" checked> shading</label>
         <label><input type="checkbox" id="c2d" checked> 2D map beside the 3D view</label>
     </details>
-    <details class="grp" data-g="view" open><summary>3D view</summary>
+    <details class="grp" data-g="view"><summary>3D view</summary>
         <label>registration <select id="cMode"><option value="3d">full 3D (rolling)</option><option value="z">z-rotation only</option><option value="none">none (raw)</option></select></label>
         <label title="1 = equal scale on x, y, z">z exaggeration <span class="rv"><input type="range" id="cZe" min="0.2" max="5" step="0.1" value="1"><b id="cZeV">1.0</b></span></label>
         <label><input type="checkbox" id="cOrtho" checked> orthographic projection</label>
@@ -141,7 +141,7 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
         <label title="embryo orientation (sphere + body axes) and cantilever tip, relative to frame 1"><input type="checkbox" id="cGz" checked> orientation inset</label>
         <div class="row"><button data-v="iso">Iso</button><button data-v="top">Top</button><button data-v="front">Front</button><button data-v="side">Side</button></div>
     </details>
-    <details class="grp" data-g="seg" id="olGrp" style="display:none" open><summary>Segmentation</summary>
+    <details class="grp" data-g="seg" id="olGrp" style="display:none"><summary>Segmentation</summary>
         <label><input type="checkbox" id="cOutline" checked> cell outlines</label>
         <label>outline style <select id="cOStyle"><option value="vector">vector (curves + junctions)</option><option value="pixels">pixels</option></select></label>
         <label title="outline width (3D tube radius in µm; 2D line width)">outline width <span class="rv"><input type="range" id="cOW" min="0.04" max="0.4" step="0.02" value="0.12"><b id="cOWV">0.12</b></span></label>
@@ -2235,18 +2235,37 @@ const GZ=(()=>{
   const cone=new THREE.Mesh(new THREE.ConeGeometry(0.22,0.6,16),tm);cone.rotation.x=Math.PI/2;cone.rotateX(Math.PI);cone.position.z=1.55;tip.add(cone);
   const beam=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.34,0.08),tm);beam.position.set(-0.7,0,1.9);tip.add(beam);
   const ts=glab('tip','#555b66');ts.scale.set(0.8,0.8,1);ts.position.set(-1.7,0,2.35);tip.add(ts);
+  // tip track: where the tip axis meets the sphere in every frame (embryo coordinates), drawn on the sphere
+  const trk={key:null,P:null,idx:null,all:null,now:null,dot:null};
+  const matAll=new THREE.MeshBasicMaterial({color:0x8a8f99,transparent:true,opacity:0.55}),matNow=new THREE.MeshBasicMaterial({color:0xff2d55});
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(0.09,14,10),matNow);emb.add(dot);
+  function slerp(a,b,t){const w=Math.acos(Math.max(-1,Math.min(1,a.dot(b))));if(w<1e-6)return a.clone();const s1=Math.sin((1-t)*w)/Math.sin(w),s2=Math.sin(t*w)/Math.sin(w);return a.clone().multiplyScalar(s1).add(b.clone().multiplyScalar(s2));}
+  function tube(pts,r,m){if(pts.length<2)return null;const c=new THREE.CatmullRomCurve3(pts,false,'centripetal');return new THREE.Mesh(new THREE.TubeGeometry(c,Math.max(8,pts.length*2),r,6,false),m);}
+  function buildTrack(key){
+    const V=FR.map(f=>new THREE.Vector3(f.M[key][2],f.M[key][6],f.M[key][10]).normalize());   // instrument z in embryo coords
+    const P=[],idx=[];
+    for(let k=0;k<V.length;k++){idx.push(P.length);if(k===0){P.push(V[0].clone().multiplyScalar(1.015));continue;}
+      const n=Math.max(1,Math.ceil(Math.acos(Math.max(-1,Math.min(1,V[k-1].dot(V[k]))))/0.05));
+      for(let j=1;j<=n;j++)P.push(slerp(V[k-1],V[k],j/n).multiplyScalar(1.015));}
+    idx[V.length-1]=P.length-1;
+    if(trk.all){emb.remove(trk.all);trk.all.geometry.dispose();}
+    trk.all=tube(P,0.022,matAll);if(trk.all)emb.add(trk.all);trk.P=P;trk.idx=idx;trk.key=key;}
+  function setTrack(k){
+    if(trk.now){emb.remove(trk.now);trk.now.geometry.dispose();trk.now=null;}
+    const n=trk.idx[k];trk.now=tube(trk.P.slice(0,n+1),0.04,matNow);if(trk.now)emb.add(trk.now);dot.position.copy(trk.P[n]);}
   const q=new THREE.Matrix4();
   function rot(M){q.set(M[0],M[1],M[2],0,M[4],M[5],M[6],0,M[8],M[9],M[10],0,0,0,0,1);return q.clone();}
   function update(){
     const on=cfg.gz!==false;$('gzw').style.display=on?'':'none';if(!on||!FR.length)return;
-    const f=FR[cur],key=cfg.mode==='none'?'3d':cfg.mode,R=rot(f.M[key]);   // q = R p + t : frame k (instrument) -> frame 1 (embryo)
+    const f=FR[cur],key=cfg.mode==='none'?'3d':cfg.mode,R=rot(f.M[key]);
+    if(trk.key!==key)buildTrack(key);setTrack(cur);   // q = R p + t : frame k (instrument) -> frame 1 (embryo)
     emb.matrixAutoUpdate=tip.matrixAutoUpdate=false;
     if(cfg.mode==='none'){emb.matrix.copy(R.clone().transpose());tip.matrix.identity();}   // scene = instrument frame: embryo turns
     else{emb.matrix.identity();tip.matrix.copy(R);}                                      // scene = embryo frame: tip turns
     // tip tilt = angle between instrument z and embryo z
     const tz=new THREE.Vector3(f.M[key][2],f.M[key][6],f.M[key][10]),tilt=Math.acos(Math.max(-1,Math.min(1,tz.z)))*180/Math.PI;
     const tot=key==='z'?Math.abs(f.cum.z):f.cum['3d'];
-    $('gzt').textContent=`rotation ${tot.toFixed(1)}° vs frame 1\ntip tilt ${tilt.toFixed(1)}°${key==='z'?' (z-only)':''}`;
+    $('gzt').textContent=`rot. ${tot.toFixed(1)}° vs frame 1\ntip tilt ${tilt.toFixed(1)}°${key==='z'?' (z only)':''}\nred = tip path`;
     const cph=Math.cos(cam.ph);ca.position.set(10*cph*Math.cos(cam.th),10*cph*Math.sin(cam.th),10*Math.sin(cam.ph));ca.lookAt(0,0,0);L.position.copy(ca.position);
     r.render(sc,ca);}
   return {update,canvas:c};})();
@@ -2647,8 +2666,8 @@ $('cPs').oninput=e=>{cfg.psize=+e.target.value;$('cPsV').textContent=cfg.psize;a
 $('c2d').onchange=e=>{cfg.show2d=e.target.checked;m2.classList.toggle('off',!cfg.show2d);setTimeout(()=>{resize();draw2D();},0);};
 document.querySelectorAll('.xr').forEach(c=>c.onchange=()=>{cfg.xshow=[...document.querySelectorAll('.xr')].reduce((m,e)=>m|(e.checked?+e.value:0),0);restyle();});
 $('bCtl').onclick=()=>{const c=$('ctl');c.classList.toggle('off');$('bCtl').classList.toggle('on',!c.classList.contains('off'));setTimeout(()=>{resize();draw2D();},0);};
-document.querySelectorAll('#ctl details.grp').forEach(d=>{try{const v=localStorage.getItem('afmv.grp.'+d.dataset.g);if(v!==null)d.open=v==='1';}catch(e){}
-  d.addEventListener('toggle',()=>{try{localStorage.setItem('afmv.grp.'+d.dataset.g,d.open?'1':'0');}catch(e){}});});
+document.querySelectorAll('#ctl details.grp').forEach(d=>{try{const v=localStorage.getItem('afmv2.grp.'+d.dataset.g);if(v!==null)d.open=v==='1';}catch(e){}
+  d.addEventListener('toggle',()=>{try{localStorage.setItem('afmv2.grp.'+d.dataset.g,d.open?'1':'0');}catch(e){}});});
 $('cDim').onchange=e=>{cfg.dim=e.target.checked;show(cur);};
 $('cShade').onchange=e=>{cfg.shade=e.target.checked;if(mesh){mesh.material.dispose();mesh.material=material();}req();};
 $('cAxes').onchange=e=>{cfg.axes=e.target.checked;rebuildAxes();};
