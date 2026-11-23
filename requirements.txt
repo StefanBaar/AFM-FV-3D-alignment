@@ -1,0 +1,5 @@
+numpy>=1.20
+scipy>=1.6
+scikit-image>=0.19
+matplotlib
+tomli; python_version < "3.11"

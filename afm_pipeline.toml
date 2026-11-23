@@ -1,0 +1,138 @@
+# =============================================================================
+#  AFM force-volume pipeline: all parameters in one file
+#
+#  Used by:  afm_ting_pipeline.py  extract_topo_E.py  segment_cells.py  build_timelapse_viewer.py
+#            python <script>.py ... --config afm_pipeline.toml
+#  Priority: command-line option  >  this file  >  built-in default.
+#  "auto"  = derived from the data (rule given next to the key).
+#  Units are part of every key name (um = micrometre).
+#
+#  Sections, in order:
+#    1. afm            calibration that is NOT in the instrument's config.txt
+#    2. probe          probe geometry / contact model
+#    3. acquisition    values normally read from config.txt (override only if wrong)
+#    4. preprocessing  raw signal -> force curve
+#    5. fit            Ting viscoelastic fit
+#    6. quality        which fitted pixels count as valid
+#    7. clustering     force-curve shape clusters
+#    8. adhesion       retract-curve analysis
+#    9. export         maps written by extract_topo_E.py
+#   10. registration   rigid 3D alignment of the frames of a time-lapse
+#   11. segmentation   cell segmentation
+#   12. tracking       linking cells over time
+#   13. viewer         HTML time-lapse viewer
+#   14. run            CPU use, output naming
+# =============================================================================
+
+
+[afm]                                   # ---- 1. calibration (not in config.txt) ----
+invols_nm_per_V        = 200.0          # inverse optical lever sensitivity of the cantilever
+spring_constant_N_m    = 0.09           # cantilever spring constant k (nominal AC40: 0.09)
+z_sensitivity_um_per_V = 25.0           # Z piezo / sensor: um per V of the recorded Z signal
+xy_sensitivity_um_per_V = 25.0          # X/Y scanner: um per V (scan size = xlength * this)
+
+
+[probe]                                 # ---- 2. probe ----
+geometry      = "sphere"                # "sphere" (exact Sneddon), "paraboloid" (Hertz) or "cone"
+radius_um     = 2.5                     # sphere / paraboloid radius R of the colloidal probe
+half_angle_deg = 17.5                   # cone only
+poisson_ratio = 0.5                     # nu of the sample (0.5 = incompressible)
+
+
+[acquisition]                           # ---- 3. normally read from config.txt ----
+sample_interval_s = "auto"              # auto: loop_time [us] from config.txt
+zigzag            = "auto"              # auto: Zig from config.txt (TRUE = every 2nd line reversed)
+# pixel size: always xlength * xy_sensitivity / Xstep  and  ylength * xy_sensitivity / Ystep
+
+
+[preprocessing]                         # ---- 4. raw signal -> force ----
+drag_correction  = true                 # hydrodynamic drag from the approach/retract baseline offset
+baseline_samples = "auto"               # auto: min(600, num_app / 3); force zero + noise from these
+block_average    = "auto"               # auto: round((num_app + num_ret) / 800)  -> ~800 points per curve
+z_smoothing_ms   = 2.7                  # Savitzky-Golay window for Z position / velocity
+
+
+[fit]                                   # ---- 5. Ting fit ----
+t0_s            = 1.0                   # reference time of E1:  E(t) = E1 (t / t0)^(-alpha)
+tref_s          = [0.001, 0.002, 0.01]  # E(t) maps at these times, for every variant (1-2 ms: E and alpha ~uncorrelated)
+slope_correction = true                 # refit along the local surface normal
+slope_smooth_um = "auto"                # auto: max(pixel size, R/3)  (smoothing of the height for the slope)
+variants        = ["labcp", "squeeze", "elastic", "depth"]
+#   main fit (always): contact point fitted -> E1_Pa, alpha (normal frame), E1_vertical_Pa, alpha_vertical
+#   labcp   : contact point of the lab FV pipeline (cubic baseline, start of the toe), fixed -> E1_labcp_Pa, alpha_labcp
+#   squeeze : contact point fitted + hydrodynamic term A v/(h+h0)          -> E1_sq_Pa, alpha_sq, eta_sq_mPas, h0_sq_um
+#   elastic : alpha = 0 (Hertz/Sneddon), approach only, contact fitted     -> E_elastic_Pa
+#   depth   : E from the first 40 % / all of the indentation (main fit)   -> E_depth_ratio (1 = consistent)
+
+
+[quality]                               # ---- 6. valid pixels ----
+r2_min            = 0.9                 # minimum R^2 of the fit
+slope_max_deg     = 60.0                # steeper pixels are excluded (slope correction unreliable)
+max_delta_over_R  = 2.0                 # indentation deeper than this * R is excluded
+
+
+[clustering]                            # ---- 7. ----
+n_clusters = 3                          # k-means on peak-normalised curve shapes (0 = off)
+
+
+[adhesion]                              # ---- 8. retract curves ----
+enabled               = true
+threshold_min_nN      = 0.03            # "still attached" threshold = max(this, noise_factor * noise)
+noise_factor          = 5.0
+detach_smoothing_points = 7             # Savitzky-Golay window for the detachment length
+rupture_window_points = 10              # half window of the local "quadratic + step" fit
+rupture_min_se        = 6.0             # step must exceed this many standard errors
+tether_smoothing_points = 31            # Savitzky-Golay window for plateau detection
+tether_max_slope_nN_um  = 0.05          # |dF/ds| below this = flat
+tether_min_length_um    = 0.8           # minimum plateau length
+tether_noise_factor     = 3.0           # plateau force must be below -max(this * noise, threshold_min)
+
+
+[export]                                # ---- 9. extract_topo_E.py ----
+e_map   = "E_at_1ms_Pa"                 # map in E/ (all versions are exported anyway): E_at_1ms_Pa, E1_Pa, E_at_1ms_labcp_Pa, ...
+no_mask = true                          # keep values at excluded pixels (filter later with excluded/)
+recompute_adhesion = false              # recompute adhesion maps from the stored curves with [adhesion]
+
+
+[registration]                          # ---- 10. time-lapse alignment ----
+rot_max_deg    = 24.0                   # coarse search range of the rotation per frame step
+shift_max_um   = "auto"                 # auto: 0.65 * field of view (smaller side), whole um
+spike_um       = 5.0                    # height spikes (vs 3x3 median) replaced by the median
+recompute      = false                  # ignore the cached registration.json
+
+
+[segmentation]                          # ---- 11. cells ----
+cell_diameter_um = 4.0                  # typical cell diameter D; sets all length scales marked (D)
+channels   = "auto"                     # auto: adhesion force + work if present, else all; or "all" or a list
+grid_um    = "auto"                     # (D) auto: min(D/16, px/2, py/2)
+detrend_um = "auto"                     # (D) auto: D
+ridge_um   = "auto"                     # (D) auto: [0.08 D, 0.18 D]
+smooth_um  = "auto"                     # (D) auto: 0.09 D
+min_area_um2 = "auto"                   # (D) auto: 0.15 D^2
+seed_depth = 0.1                        # h-minima depth (robust units): higher = fewer, larger cells
+contrast   = 0.2                        # minimum boundary contrast (robust units)
+despike_k  = 4.0                        # isolated-outlier filter (robust SD), 0 = off
+drop_excluded = false                   # treat pixels flagged in excluded/ as no data
+
+
+[tracking]                              # ---- 12. ----
+iou_min         = 0.2                   # minimum overlap (intersection over union) of a link
+max_gap_frames  = 3                     # missing frames bridged
+max_step_um     = "auto"                # (D) auto: 0.75 D   plausibility of a link
+max_area_change = 1.8                   # plausibility: larger / smaller area
+refine_shift_um = "auto"                # (D) auto: 0.75 D   fine-alignment search range
+refine_rot_deg  = 4.0
+track_plane     = "local"               # "local" (earlier frame's scan plane) or "registered" (frame 0)
+
+
+[viewer]                                # ---- 13. ----
+display_grid_um = "auto"                # auto: min(px, py) / 2 ; 0 = raw pixels
+outlier_k       = 5.0                   # display outlier filter (robust SD)
+fill_holes_px   = 12                    # holes up to this size are filled for display
+default_field   = "E"
+
+
+[run]                                   # ---- 14. ----
+cores      = 0.8                        # fraction of CPU cores (<= 1) or number of workers (> 1)
+name_depth = 3                          # path components of a dataset used for its output name
+png        = true                       # quick-look PNG per dataset

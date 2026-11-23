@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.npz
+*.npy
+.DS_Store
+/results/
+/maps/
+/seg/
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.fls
+*.fdb_latexmk

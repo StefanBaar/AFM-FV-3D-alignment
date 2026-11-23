@@ -1,0 +1,53 @@
+{
+ "pair": {
+  "a": "19:00:35",
+  "k": "19:07:06",
+  "rel_angle_deg": 1.499301998712879,
+  "rel_t": [
+   1.5414692563312595,
+   -0.7655490374097198,
+   -0.8144146014963781
+  ],
+  "refine_deg": -0.6868429735594122,
+  "refine_dx": 0.10040860763601579,
+  "refine_dy": 0.2720096784736935,
+  "corr_before": 0.4101821801758022,
+  "corr_after": 0.44045371665431454
+ },
+ "iou": {
+  "n_a": 112,
+  "n_k": 103,
+  "n_linked": 82,
+  "median_iou": 0.42083333333333334,
+  "linked_same_track": 82
+ },
+ "stats": {
+  "tracks": 823,
+  "cells_total": 4385,
+  "cells_per_frame_median": 102.0,
+  "linked_frac": 0.7751883239171374,
+  "obs_ge": [
+   325,
+   136,
+   28,
+   9
+  ],
+  "rel_ge": [
+   154,
+   26,
+   6,
+   1
+  ],
+  "longest": 38,
+  "longest_rel": 33,
+  "link_ok": 0.6532846715328468,
+  "med_step": 1.3904999999999998,
+  "med_area_ratio": 1.388,
+  "area_med": 11.149,
+  "area_surf_med": 16.589,
+  "eqd_med": 4.596,
+  "div_conf": 74,
+  "div_cand": 123,
+  "gap_links": null
+ }
+}
