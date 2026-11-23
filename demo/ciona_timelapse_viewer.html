@@ -152,6 +152,7 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
         <label>format <select id="xFmt"><option value="png">PNG</option><option value="pdf">PDF</option><option value="mp4">MP4 (all frames)</option></select></label>
         <label title="output width (px)">width <select id="xW"><option>1280</option><option selected>1920</option><option>2560</option><option>3840</option></select></label>
         <label title="white background and dark text in the export"><input type="checkbox" id="xWhite" checked> white background</label>
+        <label title="MP4 only: 30 fps video (60 fps above 4 frames/s); each AFM frame is shown for 1/speed s and cross-faded into the next; the inset rotates and the tip path grows continuously"><input type="checkbox" id="xSmooth" checked> smooth video (30 fps, cross-fade)</label>
         <div class="row"><button id="bExp" class="pri">Export</button><span id="xStat"></span></div>
     </details>
   </aside>
@@ -2250,21 +2251,23 @@ const GZ=(()=>{
     idx[V.length-1]=P.length-1;
     if(trk.all){emb.remove(trk.all);trk.all.geometry.dispose();}
     trk.all=tube(P,0.022,matAll);if(trk.all)emb.add(trk.all);trk.P=P;trk.idx=idx;trk.key=key;}
-  function setTrack(k){
+  function setTrack(k,t=0){
     if(trk.now){emb.remove(trk.now);trk.now.geometry.dispose();trk.now=null;}
-    const n=trk.idx[k];trk.now=tube(trk.P.slice(0,n+1),0.04,matNow);if(trk.now)emb.add(trk.now);dot.position.copy(trk.P[n]);}
+    const k1=Math.min(trk.idx.length-1,k+1),n=Math.round(trk.idx[k]+t*(trk.idx[k1]-trk.idx[k]));trk.now=tube(trk.P.slice(0,n+1),0.04,matNow);if(trk.now)emb.add(trk.now);dot.position.copy(trk.P[n]);}
   const q=new THREE.Matrix4();
   function rot(M){q.set(M[0],M[1],M[2],0,M[4],M[5],M[6],0,M[8],M[9],M[10],0,0,0,0,1);return q.clone();}
-  function update(){
+  function update(u){                 // u = fractional frame position (video transitions); default: current frame
     const on=cfg.gz!==false;$('gzw').style.display=on?'':'none';if(!on||!FR.length)return;
-    const f=FR[cur],key=cfg.mode==='none'?'3d':cfg.mode,R=rot(f.M[key]);
-    if(trk.key!==key)buildTrack(key);setTrack(cur);   // q = R p + t : frame k (instrument) -> frame 1 (embryo)
+    if(u===undefined)u=cur;const k0=Math.max(0,Math.min(FR.length-1,Math.floor(u))),k1=Math.min(FR.length-1,k0+1),t=Math.min(1,Math.max(0,u-k0));
+    const key=cfg.mode==='none'?'3d':cfg.mode,R0=rot(FR[k0].M[key]),R1=rot(FR[k1].M[key]);
+    const qa=new THREE.Quaternion().setFromRotationMatrix(R0),qb=new THREE.Quaternion().setFromRotationMatrix(R1),R=new THREE.Matrix4().makeRotationFromQuaternion(qa.slerp(qb,t));
+    if(trk.key!==key)buildTrack(key);setTrack(k0,t);   // q = R p + t : frame k (instrument) -> frame 1 (embryo)
     emb.matrixAutoUpdate=tip.matrixAutoUpdate=false;
     if(cfg.mode==='none'){emb.matrix.copy(R.clone().transpose());tip.matrix.identity();}   // scene = instrument frame: embryo turns
     else{emb.matrix.identity();tip.matrix.copy(R);}                                      // scene = embryo frame: tip turns
     // tip tilt = angle between instrument z and embryo z
-    const tz=new THREE.Vector3(f.M[key][2],f.M[key][6],f.M[key][10]),tilt=Math.acos(Math.max(-1,Math.min(1,tz.z)))*180/Math.PI;
-    const tot=key==='z'?Math.abs(f.cum.z):f.cum['3d'];
+    const tz=new THREE.Vector3().setFromMatrixColumn(R,2),tilt=Math.acos(Math.max(-1,Math.min(1,tz.z)))*180/Math.PI;
+    const cz=f=>key==='z'?Math.abs(f.cum.z):f.cum['3d'],tot=cz(FR[k0])*(1-t)+cz(FR[k1])*t;
     $('gzt').textContent=`rot. ${tot.toFixed(1)}° vs frame 1\ntip tilt ${tilt.toFixed(1)}°${key==='z'?' (z only)':''}\nred = tip path`;
     const cph=Math.cos(cam.ph);ca.position.set(10*cph*Math.cos(cam.th),10*cph*Math.sin(cam.th),10*Math.sin(cam.ph));ca.lookAt(0,0,0);L.position.copy(ca.position);
     r.render(sc,ca);}
@@ -2546,15 +2549,16 @@ function hoverAt(e){
 /* ------------------------------------------------------------------ playback */
 /* ------------------------------------------------------------------ export: PNG / PDF / MP4 */
 const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-function compose3D(k){
+function base3D(k){                         // 3D view + colour bar, without time stamp and inset
   const W=view.clientWidth,H=view.clientHeight,o=document.createElement('canvas');o.width=Math.round(W*k);o.height=Math.round(H*k);
   const g=o.getContext('2d');g.fillStyle=cssv('--scene')||'#fff';g.fillRect(0,0,o.width,o.height);g.drawImage(cv,0,0,o.width,o.height);
-  const cb=$('cb');g.drawImage(cb,cb.offsetLeft*k,cb.offsetTop*k,cb.clientWidth*k,cb.clientHeight*k);
-  const f=FR[cur];g.fillStyle=cssv('--fg')||'#222';g.font=`600 ${18*k}px system-ui`;g.textBaseline='alphabetic';g.fillText(f.time,10*k,25*k);
+  const cb=$('cb');g.drawImage(cb,cb.offsetLeft*k,cb.offsetTop*k,cb.clientWidth*k,cb.clientHeight*k);return o;}
+function overlay3D(g,k,u){                    // time stamp + orientation inset at fractional frame position u
+  const f=FR[Math.min(NF-1,Math.round(u))];g.fillStyle=cssv('--fg')||'#222';g.font=`600 ${18*k}px system-ui`;g.textBaseline='alphabetic';g.fillText(f.time,10*k,25*k);
   g.fillStyle=cssv('--mute')||'#666';g.font=`${12*k}px system-ui`;g.fillText(`t = ${f.tmin.toFixed(1)} min · ${f.label}`,10*k,42*k);
-  if(cfg.gz!==false){const w=$('gzw');GZ.update();g.drawImage(GZ.canvas,(w.offsetLeft+1)*k,(w.offsetTop+1)*k,128*k,128*k);
-    g.font=`${11*k}px system-ui`;$('gzt').textContent.split('\n').forEach((t,i)=>g.fillText(t,(w.offsetLeft+7)*k,(w.offsetTop+142+13*i)*k));}
-  return o;}
+  if(cfg.gz!==false){const w=$('gzw');GZ.update(u);g.drawImage(GZ.canvas,(w.offsetLeft+1)*k,(w.offsetTop+1)*k,128*k,128*k);
+    g.font=`${11*k}px system-ui`;$('gzt').textContent.split('\n').forEach((t,i)=>g.fillText(t,(w.offsetLeft+7)*k,(w.offsetTop+142+13*i)*k));}}
+function compose3D(k){const o=base3D(k);overlay3D(o.getContext('2d'),k,cur);return o;}
 function compose2D(k){
   const o=document.createElement('canvas');o.width=c2.width;o.height=c2.height;const g=o.getContext('2d');
   g.fillStyle=cssv('--scene')||'#fff';g.fillRect(0,0,o.width,o.height);g.drawImage(c2,0,0);return o;}
@@ -2566,14 +2570,21 @@ async function beginExport(what,Wt){
   if($('xWhite').checked)document.documentElement.classList.add('xw');
   hov=null;$('readout').style.display='none';bg();rebuildAxes();resize();draw2D();await new Promise(r=>setTimeout(r,30));}
 function endExport(){EXP=null;document.documentElement.classList.remove('xw');bg();rebuildAxes();resize();draw2D();req();}
-function frameCanvas(what,Wt){              // render the current frame and return a canvas Wt wide (even size)
+function baseCanvas(what){                  // current frame, everything except the 3D time stamp and inset (scale EXP.k)
   renderer.render(scene,camera);draw2D();drawCbar();
-  const k=EXP.k;let src;
-  if(what==='3d')src=compose3D(k);else if(what==='2d')src=compose2D(k);
-  else{const a=compose3D(k),b=compose2D(k),hb=a.height,wb=Math.round(b.width*hb/b.height);src=document.createElement('canvas');src.width=a.width+wb;src.height=hb;
-    const g=src.getContext('2d');g.drawImage(a,0,0);g.drawImage(b,a.width,0,wb,hb);g.fillStyle=cssv('--line')||'#ccc';g.fillRect(a.width,0,Math.max(1,k),hb);}
+  const k=EXP.k;
+  if(what==='3d')return base3D(k);
+  if(what==='2d')return compose2D(k);
+  const a=base3D(k),b=compose2D(k),hb=a.height,wb=Math.round(b.width*hb/b.height),src=document.createElement('canvas');src.width=a.width+wb;src.height=hb;
+  const g=src.getContext('2d');g.drawImage(a,0,0);g.drawImage(b,a.width,0,wb,hb);g.fillStyle=cssv('--line')||'#ccc';g.fillRect(a.width,0,Math.max(1,k),hb);return src;}
+function finish(src,Wt){                     // even-sized output canvas Wt wide
   const w=2*Math.round(Wt/2),h=2*Math.round(w*src.height/src.width/2),o=document.createElement('canvas');o.width=w;o.height=h;
   const g=o.getContext('2d');g.fillStyle=cssv('--scene')||'#fff';g.fillRect(0,0,w,h);g.imageSmoothingQuality='high';g.drawImage(src,0,0,w,h);return o;}
+function mixFrame(what,A,B,a,u){             // cross-fade A -> B by a, overlays at frame position u
+  const o=document.createElement('canvas');o.width=A.width;o.height=A.height;const g=o.getContext('2d');g.drawImage(A,0,0);
+  if(B&&a>0){g.globalAlpha=a;g.drawImage(B,0,0,o.width,o.height);g.globalAlpha=1;}
+  if(what!=='2d')overlay3D(g,EXP.k,u);return o;}
+function frameCanvas(what,Wt){return finish(mixFrame(what,baseCanvas(what),null,0,cur),Wt);}
 function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
 async function deflate(u8){const cs=new CompressionStream('deflate');const w=cs.writable.getWriter();w.write(u8);w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer());}
 async function pdfFromCanvas(c,ptW){        // one-page PDF, lossless RGB image (FlateDecode)
@@ -2593,19 +2604,28 @@ async function pdfFromCanvas(c,ptW){        // one-page PDF, lossless RGB image 
   return new Blob(parts,{type:'application/pdf'});}
 async function exportMP4(what,Wt,base){
   if(typeof VideoEncoder==='undefined')throw new Error('this browser has no WebCodecs video encoder – use a current Chrome, Edge, Safari or Firefox');
-  const fps=Math.max(1,cfg.fps),c0=frameCanvas(what,Wt),W=c0.width,H=c0.height;
-  let codec=null;for(const cd of['avc1.640033','avc1.4d0033','avc1.42003e','avc1.640028']){try{const r=await VideoEncoder.isConfigSupported({codec:cd,width:W,height:H,bitrate:12e6,framerate:fps});if(r.supported){codec=cd;break;}}catch(e){}}
+  const smooth=$('xSmooth').checked,step=1/Math.max(0.1,cfg.fps);                 // seconds per AFM frame (playback speed)
+  const vfps=smooth?(cfg.fps>4?60:30):Math.max(1,cfg.fps),nsub=smooth?Math.max(1,Math.round(vfps*step)):1,FADE=nsub<=8?1:0.5;   // fast playback: fade over the whole step
+  const keep=cur,wasPlaying=playing;setPlaying(false);show(0);
+  let B=baseCanvas(what);const c0=finish(mixFrame(what,B,null,0,0),Wt),W=c0.width,H=c0.height;
+  let codec=null;for(const cd of['avc1.640033','avc1.4d0033','avc1.42003e','avc1.640028']){try{const r=await VideoEncoder.isConfigSupported({codec:cd,width:W,height:H,bitrate:12e6,framerate:vfps});if(r.supported){codec=cd;break;}}catch(e){}}
   if(!codec)throw new Error(`H.264 encoding at ${W}×${H} is not supported here – pick a smaller width`);
-  const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:'avc',width:W,height:H,frameRate:fps},fastStart:'in-memory'});
+  const muxer=new Mp4Muxer.Muxer({target:new Mp4Muxer.ArrayBufferTarget(),video:{codec:'avc',width:W,height:H,frameRate:vfps},fastStart:'in-memory'});
   let err=null;const enc=new VideoEncoder({output:(ch,meta)=>muxer.addVideoChunk(ch,meta),error:e=>err=e});
-  enc.configure({codec,width:W,height:H,bitrate:Math.round(Math.min(40e6,W*H*fps*0.6+4e6)),framerate:fps,latencyMode:'quality'});
-  const keep=cur,wasPlaying=playing;setPlaying(false);
-  try{for(let i=0;i<NF;i++){if(err)throw err;show(i);const c=frameCanvas(what,Wt);
-      const vf=new VideoFrame(c,{timestamp:Math.round(i*1e6/fps),duration:Math.round(1e6/fps)});enc.encode(vf,{keyFrame:i%10===0});vf.close();
-      $('xStat').textContent=`encoding ${i+1}/${NF}`;while(enc.encodeQueueSize>3)await new Promise(r=>setTimeout(r,5));await new Promise(r=>setTimeout(r,0));}
+  enc.configure({codec,width:W,height:H,bitrate:Math.round(Math.min(40e6,W*H*Math.min(vfps,10)*0.5+4e6)),framerate:vfps,latencyMode:'quality'});
+  let n=0;const put=async c=>{const vf=new VideoFrame(c,{timestamp:Math.round(n*1e6/vfps),duration:Math.round(1e6/vfps)});enc.encode(vf,{keyFrame:n%(2*vfps)===0});vf.close();n++;
+    while(enc.encodeQueueSize>3)await new Promise(r=>setTimeout(r,5));};
+  try{for(let i=0;i<NF;i++){if(err)throw err;
+      let Bn=null;if(smooth&&i<NF-1){show(i+1);Bn=baseCanvas(what);}
+      for(let j=0;j<nsub;j++){const sj=j/nsub;let a=0;
+        if(Bn&&sj>=1-FADE){a=(sj-(1-FADE))/FADE;a=a*a*(3-2*a);}               // smoothstep cross-fade in the second half
+        await put(finish(mixFrame(what,B,Bn,a,i+a),Wt));}
+      if(Bn)B=Bn;else if(i<NF-1){show(i+1);B=baseCanvas(what);}
+      $('xStat').textContent=`encoding ${i+1}/${NF}`;await new Promise(r=>setTimeout(r,0));}
+    if(smooth)for(let j=0;j<vfps;j++)await put(finish(mixFrame(what,B,null,0,NF-1),Wt));   // hold the last frame 1 s
     await enc.flush();if(err)throw err;muxer.finalize();save(new Blob([muxer.target.buffer],{type:'video/mp4'}),`${base}.mp4`);}
   finally{enc.close();show(keep);if(wasPlaying)setPlaying(true);}
-  return `${W}×${H}, ${NF} frames at ${fps} fps`;}
+  return `${W}×${H}, ${n} video frames at ${vfps} fps`+(smooth?` (${NF} AFM frames, ${step.toFixed(2)} s each, cross-faded)`:'');}
 $('xFmt').onchange=e=>{$('xW').title=e.target.value==='pdf'?'raster width (px) embedded in the PDF':'output width (px)';};
 $('bExp').onclick=async()=>{
   const what=$('xWhat').value,fmt=$('xFmt').value,Wt=+$('xW').value,f=FR[cur],b=$('bExp');
