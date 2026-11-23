@@ -18,6 +18,12 @@ Viscoelastic analysis of AFM force-volume maps and time-lapses of living specime
 
 All four read one parameter file, [`afm_pipeline.toml`](afm_pipeline.toml), grouped as: AFM / probe / acquisition / preprocessing / fit / quality / clustering / adhesion / export / registration / segmentation / tracking / viewer. Values set to `"auto"` are derived from the data (block size, baseline window, scan size, registration shift limit, …). Command-line options override the file.
 
+## Try it
+
+**Live demo:** [stefanbaar.github.io/AFM-FV-Ting-pipeline/demo/ciona_timelapse_viewer.html](https://stefanbaar.github.io/AFM-FV-Ting-pipeline/demo/ciona_timelapse_viewer.html) – the full 41-frame Ciona time-lapse in the viewer (one self-contained 10 MB HTML file; nothing to install).
+
+Offline: download [`demo/ciona_timelapse_viewer.html`](demo/ciona_timelapse_viewer.html) (*Download raw file*) and open it in Chrome, Edge, Safari or Firefox.
+
 ## Time-lapse viewer
 
 ![Time-lapse viewer](media/screenshot_viewer.png)
