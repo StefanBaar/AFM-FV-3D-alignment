@@ -152,7 +152,8 @@ html.xw{--bg:#ffffff;--panel:#f4f5f7;--line:#d9dce1;--fg:#1d2026;--mute:#6b7280;
         <label>format <select id="xFmt"><option value="png">PNG</option><option value="pdf">PDF</option><option value="mp4">MP4 (all frames)</option></select></label>
         <label title="output width (px)">width <select id="xW"><option>1280</option><option selected>1920</option><option>2560</option><option>3840</option></select></label>
         <label title="white background and dark text in the export"><input type="checkbox" id="xWhite" checked> white background</label>
-        <label title="MP4 only: 30 fps video (60 fps above 4 frames/s); each AFM frame is shown for 1/speed s and cross-faded into the next; the inset rotates and the tip path grows continuously"><input type="checkbox" id="xSmooth" checked> smooth video (30 fps, cross-fade)</label>
+        <label title="MP4 only: 30 fps video (60 fps above 4 frames/s); each AFM frame is shown for 1/speed s; the orientation inset rotates and the tip path grows continuously"><input type="checkbox" id="xSmooth" checked> smooth video (30/60 fps)</label>
+        <label title="MP4 only: blend each frame into the next (softens the cuts but shows both frames' cell outlines during the blend)"><input type="checkbox" id="xFade"> cross-fade between frames</label>
         <div class="row"><button id="bExp" class="pri">Export</button><span id="xStat"></span></div>
     </details>
   </aside>
@@ -2553,8 +2554,8 @@ function base3D(k){                         // 3D view + colour bar, without tim
   const W=view.clientWidth,H=view.clientHeight,o=document.createElement('canvas');o.width=Math.round(W*k);o.height=Math.round(H*k);
   const g=o.getContext('2d');g.fillStyle=cssv('--scene')||'#fff';g.fillRect(0,0,o.width,o.height);g.drawImage(cv,0,0,o.width,o.height);
   const cb=$('cb');g.drawImage(cb,cb.offsetLeft*k,cb.offsetTop*k,cb.clientWidth*k,cb.clientHeight*k);return o;}
-function overlay3D(g,k,u){                    // time stamp + orientation inset at fractional frame position u
-  const f=FR[Math.min(NF-1,Math.round(u))];g.fillStyle=cssv('--fg')||'#222';g.font=`600 ${18*k}px system-ui`;g.textBaseline='alphabetic';g.fillText(f.time,10*k,25*k);
+function overlay3D(g,k,u,fi){                    // time stamp + orientation inset at fractional frame position u
+  const f=FR[fi!==undefined?fi:Math.min(NF-1,Math.round(u))];g.fillStyle=cssv('--fg')||'#222';g.font=`600 ${18*k}px system-ui`;g.textBaseline='alphabetic';g.fillText(f.time,10*k,25*k);
   g.fillStyle=cssv('--mute')||'#666';g.font=`${12*k}px system-ui`;g.fillText(`t = ${f.tmin.toFixed(1)} min · ${f.label}`,10*k,42*k);
   if(cfg.gz!==false){const w=$('gzw');GZ.update(u);g.drawImage(GZ.canvas,(w.offsetLeft+1)*k,(w.offsetTop+1)*k,128*k,128*k);
     g.font=`${11*k}px system-ui`;$('gzt').textContent.split('\n').forEach((t,i)=>g.fillText(t,(w.offsetLeft+7)*k,(w.offsetTop+142+13*i)*k));}}
@@ -2580,10 +2581,10 @@ function baseCanvas(what){                  // current frame, everything except 
 function finish(src,Wt){                     // even-sized output canvas Wt wide
   const w=2*Math.round(Wt/2),h=2*Math.round(w*src.height/src.width/2),o=document.createElement('canvas');o.width=w;o.height=h;
   const g=o.getContext('2d');g.fillStyle=cssv('--scene')||'#fff';g.fillRect(0,0,w,h);g.imageSmoothingQuality='high';g.drawImage(src,0,0,w,h);return o;}
-function mixFrame(what,A,B,a,u){             // cross-fade A -> B by a, overlays at frame position u
+function mixFrame(what,A,B,a,u,fi){             // cross-fade A -> B by a, overlays at frame position u
   const o=document.createElement('canvas');o.width=A.width;o.height=A.height;const g=o.getContext('2d');g.drawImage(A,0,0);
   if(B&&a>0){g.globalAlpha=a;g.drawImage(B,0,0,o.width,o.height);g.globalAlpha=1;}
-  if(what!=='2d')overlay3D(g,EXP.k,u);return o;}
+  if(what!=='2d')overlay3D(g,EXP.k,u,fi);return o;}
 function frameCanvas(what,Wt){return finish(mixFrame(what,baseCanvas(what),null,0,cur),Wt);}
 function save(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);}
 async function deflate(u8){const cs=new CompressionStream('deflate');const w=cs.writable.getWriter();w.write(u8);w.close();return new Uint8Array(await new Response(cs.readable).arrayBuffer());}
@@ -2604,7 +2605,7 @@ async function pdfFromCanvas(c,ptW){        // one-page PDF, lossless RGB image 
   return new Blob(parts,{type:'application/pdf'});}
 async function exportMP4(what,Wt,base){
   if(typeof VideoEncoder==='undefined')throw new Error('this browser has no WebCodecs video encoder – use a current Chrome, Edge, Safari or Firefox');
-  const smooth=$('xSmooth').checked,step=1/Math.max(0.1,cfg.fps);                 // seconds per AFM frame (playback speed)
+  const smooth=$('xSmooth').checked,fade=smooth&&$('xFade').checked,step=1/Math.max(0.1,cfg.fps);                 // seconds per AFM frame (playback speed)
   const vfps=smooth?(cfg.fps>4?60:30):Math.max(1,cfg.fps),nsub=smooth?Math.max(1,Math.round(vfps*step)):1,FADE=nsub<=8?1:0.5;   // fast playback: fade over the whole step
   const keep=cur,wasPlaying=playing;setPlaying(false);show(0);
   let B=baseCanvas(what);const c0=finish(mixFrame(what,B,null,0,0),Wt),W=c0.width,H=c0.height;
@@ -2616,16 +2617,17 @@ async function exportMP4(what,Wt,base){
   let n=0;const put=async c=>{const vf=new VideoFrame(c,{timestamp:Math.round(n*1e6/vfps),duration:Math.round(1e6/vfps)});enc.encode(vf,{keyFrame:n%(2*vfps)===0});vf.close();n++;
     while(enc.encodeQueueSize>3)await new Promise(r=>setTimeout(r,5));};
   try{for(let i=0;i<NF;i++){if(err)throw err;
-      let Bn=null;if(smooth&&i<NF-1){show(i+1);Bn=baseCanvas(what);}
+      let Bn=null;if(fade&&i<NF-1){show(i+1);Bn=baseCanvas(what);}
       for(let j=0;j<nsub;j++){const sj=j/nsub;let a=0;
-        if(Bn&&sj>=1-FADE){a=(sj-(1-FADE))/FADE;a=a*a*(3-2*a);}               // smoothstep cross-fade in the second half
-        await put(finish(mixFrame(what,B,Bn,a,i+a),Wt));}
+        if(Bn&&sj>=1-FADE){a=(sj-(1-FADE))/FADE;a=a*a*(3-2*a);}               // smoothstep cross-fade
+        const u=fade?i+a:Math.min(NF-1,i+sj);                                  // inset position: continuous in both modes
+        await put(finish(mixFrame(what,B,Bn,a,u,fade?undefined:i),Wt));}
       if(Bn)B=Bn;else if(i<NF-1){show(i+1);B=baseCanvas(what);}
       $('xStat').textContent=`encoding ${i+1}/${NF}`;await new Promise(r=>setTimeout(r,0));}
     if(smooth)for(let j=0;j<vfps;j++)await put(finish(mixFrame(what,B,null,0,NF-1),Wt));   // hold the last frame 1 s
     await enc.flush();if(err)throw err;muxer.finalize();save(new Blob([muxer.target.buffer],{type:'video/mp4'}),`${base}.mp4`);}
   finally{enc.close();show(keep);if(wasPlaying)setPlaying(true);}
-  return `${W}×${H}, ${n} video frames at ${vfps} fps`+(smooth?` (${NF} AFM frames, ${step.toFixed(2)} s each, cross-faded)`:'');}
+  return `${W}×${H}, ${n} video frames at ${vfps} fps`+(smooth?` (${NF} AFM frames, ${step.toFixed(2)} s each${fade?', cross-faded':''})`:'');}
 $('xFmt').onchange=e=>{$('xW').title=e.target.value==='pdf'?'raster width (px) embedded in the PDF':'output width (px)';};
 $('bExp').onclick=async()=>{
   const what=$('xWhat').value,fmt=$('xFmt').value,Wt=+$('xW').value,f=FR[cur],b=$('bExp');

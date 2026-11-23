@@ -4,7 +4,7 @@ Viscoelastic analysis of AFM force-volume maps and time-lapses of living specime
 
 <p align="center">
   <a href="media/demo.mp4"><img src="media/demo.gif" width="760" alt="Time-lapse of the Young's modulus E on the registered surface of a Ciona embryo (41 frames, 4.5 h)"></a><br>
-  <sub>Young's modulus E(1 ms) on the registered embryo surface, 41 frames over 4.5 h (8 frames/s, cross-faded, exported from the viewer), with cell outlines, junctions and the orientation inset (embryo axes and cantilever tip). Click for the full-resolution <a href="media/demo.mp4">MP4</a>.</sub>
+  <sub>Young's modulus E(1 ms) on the registered embryo surface, 41 frames over 4.5 h (8 frames/s, exported from the viewer), with cell outlines, junctions and the orientation inset (embryo axes and cantilever tip). Click for the full-resolution <a href="media/demo.mp4">MP4</a>.</sub>
 </p>
 
 ## What it does
@@ -34,7 +34,7 @@ Offline: download [`demo/ciona_timelapse_viewer.html`](demo/ciona_timelapse_view
 - Display upsampling (0.5 / 0.25 µm, bicubic), isolated-outlier filter and hole filling, excluded pixels shown or darkened.
 - Cell outlines as smooth vectors with junctions, or pixel edges.
 - **Orientation inset**: a sphere with the embryo's body axes and the cantilever tip, the tip's path over the embryo surface so far (red), and the total rotation and tip tilt relative to frame 1.
-- **Export**: PNG, PDF or MP4 (all frames, H.264; optional smooth 30/60 fps video with cross-fades and a continuously moving orientation inset), of the 3D view, the 2D map or both side by side, at 1280–3840 px, with a white background. MP4 encoding runs in the browser (WebCodecs; current Chrome, Edge, Safari or Firefox).
+- **Export**: PNG, PDF or MP4 (all frames, H.264; optional smooth 30/60 fps video with a continuously moving orientation inset, cross-fades optional), of the 3D view, the 2D map or both side by side, at 1280–3840 px, with a white background. MP4 encoding runs in the browser (WebCodecs; current Chrome, Edge, Safari or Firefox).
 
 ## Installation
 
