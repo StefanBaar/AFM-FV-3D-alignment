@@ -4,7 +4,7 @@ Viscoelastic analysis of AFM force-volume maps and time-lapses of living specime
 
 <p align="center">
   <a href="media/demo.mp4"><img src="media/demo.gif" width="760" alt="Time-lapse of the Young's modulus E on the registered surface of a Ciona embryo (41 frames, 4.5 h)"></a><br>
-  <sub>Young's modulus E(1 ms) on the registered embryo surface, 41 frames over 4.5 h (3 frames/s), with cell outlines, junctions and the orientation inset (embryo axes and cantilever tip). Click for the full-resolution <a href="media/demo.mp4">MP4</a>.</sub>
+  <sub>Young's modulus E(1 ms) on the registered embryo surface, 41 frames over 4.5 h (9 frames/s), with cell outlines, junctions and the orientation inset (embryo axes and cantilever tip). Click for the full-resolution <a href="media/demo.mp4">MP4</a>.</sub>
 </p>
 
 ## What it does
